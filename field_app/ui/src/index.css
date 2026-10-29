@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+
+  --color-accent: #0f766e;
+  --color-accent-hover: #115e59;
+  --color-accent-soft: #f0fdfa;
+
+  --color-info: #1e40af;
+  --color-info-soft: #eff6ff;
+  --color-info-line: #bfdbfe;
+
+  --color-watch: #92400e;
+  --color-watch-soft: #fffbeb;
+  --color-watch-line: #fde68a;
+
+  --color-concern: #991b1b;
+  --color-concern-soft: #fef2f2;
+  --color-concern-line: #fecaca;
+
+  --color-integrity: #312e81;
+  --color-integrity-soft: #eef2ff;
+  --color-integrity-line: #c7d2fe;
+}
+
+body {
+  @apply bg-slate-50 font-sans text-slate-900 antialiased;
+  font-variant-numeric: tabular-nums;
+}
