@@ -17,3 +17,10 @@ console-ui/.vite/
 # OS
 .DS_Store
 Thumbs.db
+
+# Track 3 runtime data
+field_app/storage/
+field_app/ui/node_modules/
+field_app/ui/dist/
+field_app/ui/*.tsbuildinfo
+field_app/_to_delete/
