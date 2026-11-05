@@ -1,6 +1,5 @@
-// Sync engine (FR-30 to FR-41). Sends waiting records to the central system and
-// records what happened to each one. Local data is never removed until the
-// central system has confirmed it (FR-35, EH-04).
+// Sends waiting records to the central system and updates each one with the result.
+// Nothing is removed from the device until the central system confirms it.
 
 import { api, NetworkError, type ServerRecord } from "./api";
 import { db, notifyChanged, setMeta } from "./db";
@@ -135,7 +134,6 @@ async function saveLastSync(result: Omit<LastSync, "at">): Promise<void> {
   await setMeta("lastSync", JSON.stringify({ at: new Date().toISOString(), ...result }));
 }
 
-/** Conflict choice: take the central system's version (FR-49). */
 export async function keepServerVersion(record: FieldRecord): Promise<void> {
   if (!record.serverCopy) return;
   if (record.serverCopy.deleted) {
@@ -154,7 +152,6 @@ export async function keepServerVersion(record: FieldRecord): Promise<void> {
   api.resolveConflict(record.id, "kept_server").catch(() => undefined);
 }
 
-/** Conflict choice: keep this device's version and send it again (FR-49). */
 export async function keepDeviceVersion(record: FieldRecord): Promise<void> {
   await db.records.update(record.id, {
     baseVersion: record.serverVersion ?? record.baseVersion,

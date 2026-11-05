@@ -1,10 +1,9 @@
-"""Receive field records from devices: store, block duplicates, detect conflicts.
+"""Takes field records from devices, stores them, skips duplicates and catches conflicts.
 
-Conflict strategy (FR-47): a device sends `base_version`, the last server version
-it saw. If the server copy has moved on since then and the content differs, the
-update is NOT applied. The server keeps its copy, saves the device's copy in the
-`conflicts` table, and tells the device. Nothing is overwritten silently, and the
-researcher decides which version to keep.
+How conflicts work: each device sends `base_version`, the last version it saw from us.
+If our copy has changed since then and the content is different, we don't apply the
+update. We keep our copy, save theirs in the conflicts table, and let the researcher
+decide which one wins. Nothing gets overwritten without someone choosing it.
 """
 
 import hashlib
@@ -22,7 +21,7 @@ def now_iso() -> str:
 
 
 def content_hash(record: FieldRecord) -> str:
-    """Fingerprint of what the researcher captured (ignores sync bookkeeping)."""
+    """A fingerprint of what the researcher actually entered, ignoring sync details."""
     content = record.model_dump(
         mode="json",
         include={"site", "captured_at", "conditions", "readings", "notes", "deleted"},
@@ -31,7 +30,7 @@ def content_hash(record: FieldRecord) -> str:
 
 
 def load_record(conn: sqlite3.Connection, record_id: str) -> dict | None:
-    """The server's copy of a record, in the same shape devices send."""
+    """Our copy of a record, shaped the same way devices send it."""
     row = conn.execute(
         "SELECT r.*, s.name AS site_name, s.latitude, s.longitude "
         "FROM field_records r JOIN sites s ON s.id = r.site_id WHERE r.id = ?",
@@ -136,7 +135,7 @@ def _write_record(
 
 
 def apply_record(conn: sqlite3.Connection, raw: dict) -> SyncResult:
-    """Validate and apply one incoming record. Never raises for bad input."""
+    """Checks one incoming record and saves it. Bad input becomes an error result, not a crash."""
     record_id = str(raw.get("id", "unknown")) if isinstance(raw, dict) else "unknown"
     try:
         rec = FieldRecord.model_validate(raw)
@@ -157,7 +156,7 @@ def apply_record(conn: sqlite3.Connection, raw: dict) -> SyncResult:
         return SyncResult(id=str(rec.id), status="synced", version=1)
 
     if existing["content_hash"] == digest:
-        # Same content already stored (e.g. a retry after a dropped response): no duplicate.
+        # We already have this exact content, usually a retry after a dropped connection.
         return SyncResult(id=str(rec.id), status="synced", version=existing["version"])
 
     if existing["version"] == rec.base_version:

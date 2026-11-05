@@ -9,7 +9,6 @@ import { useToast } from "../components/Toast";
 import { db } from "../db";
 import { formatDateTime } from "../format";
 
-/** Send synced field data through the interpretation pipeline (US-09, FR-51 to FR-55). */
 export function ReportsPage() {
   const toast = useToast();
   const sites = useLiveQuery(() => db.sites.orderBy("name").toArray(), [], []);

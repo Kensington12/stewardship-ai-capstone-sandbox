@@ -103,7 +103,6 @@ function ConflictCard({ record }: { record: FieldRecord }) {
   );
 }
 
-/** Sync status, manual sync, failures and conflicts (FR-37 to FR-41, FR-46 to FR-49, UI-13, UI-14). */
 export function SyncPage() {
   const toast = useToast();
   const records = useLiveQuery(() => db.records.toArray(), [], []);

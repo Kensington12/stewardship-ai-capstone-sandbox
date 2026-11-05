@@ -1,7 +1,5 @@
-"""Central system for the Offline-First Field-Capture App.
-
-Devices capture field records offline and sync them here. This server stores
-them, blocks duplicates, detects conflicts, and feeds the interpretation pipeline.
+"""The central system. Devices sync their field records here, and synced records
+are what the interpretation pipeline reads.
 """
 
 from contextlib import asynccontextmanager
@@ -32,12 +30,12 @@ def health():
     return {"status": "ok"}
 
 
-# ---- Sync (FR-32 to FR-41, BE-01 to BE-07) ----
+# Sync
 
 
 @app.post("/sync", response_model=SyncResponse)
 def sync(request: SyncRequest):
-    """Apply a batch of records. Each record succeeds or fails on its own (EH-12)."""
+    """Each record in the batch succeeds or fails on its own, so one bad record can't block the rest."""
     results = []
     with get_connection() as conn:
         for raw in request.records:
@@ -73,7 +71,7 @@ def get_record(record_id: str):
 
 @app.post("/records/{record_id}/conflicts/resolve")
 def resolve_conflict(record_id: str, body: ConflictResolution):
-    """Record the researcher's choice in the conflict history (FR-49, FR-50)."""
+    """Logs which version the researcher kept."""
     with get_connection() as conn:
         updated = conn.execute(
             "UPDATE conflicts SET resolved_at = ?, resolution = ? "
@@ -93,7 +91,7 @@ def list_conflicts():
     return [dict(r) for r in rows]
 
 
-# ---- Interpretation pipeline (FR-51 to FR-55, US-09) ----
+# Interpretation pipeline
 
 
 class InterpretRequest(BaseModel):
@@ -124,7 +122,7 @@ def list_datasets():
 
 @app.post("/reports", status_code=201)
 def create_report(request: InterpretRequest):
-    """Interpret synced field records (default) or a sample dataset, then store the report."""
+    """Interprets the synced field records, or one of the sample datasets if one is named."""
     if request.dataset:
         return pipeline.interpret_file(
             resolve_dataset(request.dataset), "dataset", request.dataset

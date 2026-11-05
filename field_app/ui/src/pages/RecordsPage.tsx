@@ -32,7 +32,6 @@ function matches(record: FieldRecord, query: string): boolean {
   return haystack.includes(query.toLowerCase());
 }
 
-/** Review, search, edit and delete records stored on this device (FR-08, FR-09, FR-11, FR-12, UI-11). */
 export function RecordsPage() {
   const toast = useToast();
   const records = useLiveQuery(() => db.records.orderBy("capturedAt").reverse().toArray(), [], null);

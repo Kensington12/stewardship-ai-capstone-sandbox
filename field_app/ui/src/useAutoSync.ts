@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { syncNow, type SyncOutcome } from "./sync";
 
-/** Sync automatically after saves, when the connection returns, and every 30 s (FR-33, FR-42). */
+/** Tries to sync after every save, when the connection comes back, and every 30 seconds. */
 export function useAutoSync(onResult: (outcome: SyncOutcome) => void) {
   useEffect(() => {
     const run = () => {

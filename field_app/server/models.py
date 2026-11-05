@@ -1,4 +1,4 @@
-"""Validated shapes for field records sent by devices (BE-03, SR-09, EH-02)."""
+"""What a field record has to look like before the server will accept it."""
 
 import math
 from datetime import datetime
@@ -48,7 +48,7 @@ class Note(Strict):
 
 
 class FieldRecord(Strict):
-    """One field record: site + time + conditions + readings + notes."""
+    """One visit to a site: when, where, the conditions, and what was measured or noted."""
 
     id: UUID
     site: Site

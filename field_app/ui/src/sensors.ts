@@ -1,5 +1,5 @@
-// Common sensors offered in the capture form. Researchers can also type their own (FR-29).
-// Keys match the column names the interpretation pipeline already understands.
+// Sensors offered in the capture form. Researchers can type in others too.
+// The keys match column names the interpretation engine already recognizes.
 
 export interface SensorPreset {
   key: string;

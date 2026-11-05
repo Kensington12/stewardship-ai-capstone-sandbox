@@ -1,4 +1,4 @@
-// Field data model (FR-22 to FR-29). Mirrors field_app/server/models.py.
+// The field record as the app stores it. Kept in step with server/models.py.
 
 export type SyncStatus = "pending" | "synced" | "error" | "conflict";
 
@@ -30,7 +30,6 @@ export interface Note {
   createdAt: string;
 }
 
-/** The parts of a record a researcher actually captures. */
 export interface RecordContent {
   site: Site;
   capturedAt: string;
@@ -40,18 +39,17 @@ export interface RecordContent {
   deleted: boolean;
 }
 
-/** One field record as stored on the device. */
 export interface FieldRecord extends RecordContent {
   id: string;
   deviceId: string;
   createdAt: string;
   updatedAt: string;
-  /** Last version confirmed by the central system (0 = never synced). */
+  /** 0 until the first successful sync. */
   baseVersion: number;
   syncStatus: SyncStatus;
   lastError?: string;
   syncedAt?: string;
-  /** When in conflict: the central system's copy and its version. */
+  /** Only set while a conflict is waiting for the researcher to decide. */
   serverCopy?: RecordContent;
   serverVersion?: number;
 }

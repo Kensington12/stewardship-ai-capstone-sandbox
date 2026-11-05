@@ -1,4 +1,4 @@
-"""Sync tests. IDs in brackets map to the team's requirements document."""
+"""Sync tests. The IDs at the end of each description match docs/TRACEABILITY.md."""
 
 import uuid
 
@@ -12,7 +12,7 @@ def sync(client, *records):
 
 
 def test_new_record_is_stored_with_all_metadata(client):
-    """[T-03, T-13] Readings, notes, site, time and conditions all arrive intact."""
+    """Everything the researcher entered arrives intact. (T-03, T-13)"""
     record = make_record()
     result = sync(client, record)
     assert result["synced"] == 1
@@ -30,7 +30,7 @@ def test_new_record_is_stored_with_all_metadata(client):
 
 
 def test_resending_the_same_record_does_not_duplicate(client):
-    """[T-07, FR-34] A retry after a dropped connection is not a second record."""
+    """Sending the same record twice doesn't create a second copy. (T-07, FR-34)"""
     record = make_record()
     sync(client, record)
     second = sync(client, record)
@@ -43,14 +43,14 @@ def test_resending_the_same_record_does_not_duplicate(client):
 
 
 def test_multiple_pending_records_sync_together(client):
-    """[T-10]"""
+    """(T-10)"""
     result = sync(client, make_record(), make_record(), make_record())
     assert result["synced"] == 3
     assert len(client.get("/records").json()) == 3
 
 
 def test_edit_based_on_latest_version_is_applied(client):
-    """[FR-09] An edit made on top of the server's version replaces it."""
+    """An edit based on the latest version is saved. (FR-09)"""
     record = make_record()
     sync(client, record)
     edited = {
@@ -67,7 +67,7 @@ def test_edit_based_on_latest_version_is_applied(client):
 
 
 def test_conflicting_edit_is_flagged_and_nothing_is_overwritten(client):
-    """[T-11, T-12, FR-43 to FR-46] Two devices edit version 1; the second gets a conflict."""
+    """Two edits to the same version: the second is flagged and nothing is lost. (T-11, T-12, FR-43 to FR-46)"""
     record = make_record()
     sync(client, record)
     first_edit = {
@@ -94,7 +94,7 @@ def test_conflicting_edit_is_flagged_and_nothing_is_overwritten(client):
 
 
 def test_keeping_the_device_version_resolves_the_conflict(client):
-    """[FR-47 to FR-50] Re-sending on top of the server version wins and is logged."""
+    """Choosing "keep my version" saves it and logs the choice. (FR-47 to FR-50)"""
     record = make_record()
     sync(client, record)
     sync(
@@ -122,7 +122,7 @@ def test_keeping_the_device_version_resolves_the_conflict(client):
 
 
 def test_invalid_record_is_rejected_without_blocking_others(client):
-    """[T-15, EH-02, EH-12, SR-09] Bad input gets an error; valid records still sync."""
+    """Bad records are rejected without holding up the good ones. (T-15, EH-02, EH-12, SR-09)"""
     bad = make_record(readings=[], notes=[])
     weird = make_record(conditions={"humidity_pct": 250})
     good = make_record()
@@ -135,13 +135,13 @@ def test_invalid_record_is_rejected_without_blocking_others(client):
 
 
 def test_garbage_input_does_not_crash_the_server(client):
-    """[EH-10, T-16]"""
+    """(EH-10, T-16)"""
     result = sync(client, {"id": "not-a-uuid"}, {"nonsense": True})
     assert result["errors"] == 2
 
 
 def test_deleting_a_record_syncs_as_a_tombstone(client):
-    """[FR-11] Deletes sync too, and the record leaves the pipeline export."""
+    """Deletes sync too, and deleted records drop out of the export. (FR-11)"""
     record = make_record()
     sync(client, record)
     sync(client, {**record, "base_version": 1, "deleted": True})

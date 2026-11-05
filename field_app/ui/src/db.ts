@@ -1,5 +1,5 @@
-// On-device storage (FR-13 to FR-20). IndexedDB via Dexie: survives closing the
-// app, restarting the device, and having no connection at all.
+// Records live in the browser's own database (IndexedDB), so they survive closing
+// the app, restarting the device, and having no signal.
 
 import Dexie, { type Table } from "dexie";
 
@@ -27,7 +27,7 @@ class FieldDatabase extends Dexie {
 
 export const db = new FieldDatabase();
 
-/** A random UUID, with a fallback for browsers that only allow randomUUID on HTTPS. */
+/** Some browsers only offer randomUUID on HTTPS, so there's a fallback. */
 export function newId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const b = crypto.getRandomValues(new Uint8Array(16));
@@ -45,7 +45,6 @@ export async function setMeta(key: string, value: string): Promise<void> {
   await db.meta.put({ key, value });
 }
 
-/** A stable ID for this device, created once (FR-20). */
 export async function getDeviceId(): Promise<string> {
   const existing = await getMeta("deviceId");
   if (existing) return existing;
@@ -54,12 +53,10 @@ export async function getDeviceId(): Promise<string> {
   return id;
 }
 
-/** Tell the sync engine that something changed and is worth sending. */
 export function notifyChanged(): void {
   window.dispatchEvent(new Event("field-records-changed"));
 }
 
-/** Save a new or edited record. It is always stored locally first (FR-07, EH-01). */
 export async function saveRecord(record: FieldRecord): Promise<void> {
   const updated: FieldRecord = {
     ...record,
@@ -74,7 +71,7 @@ export async function saveRecord(record: FieldRecord): Promise<void> {
   notifyChanged();
 }
 
-/** Delete a record. Never-synced records go away now; synced ones sync the delete. */
+/** Records that never synced are just removed. Synced ones send the delete on the next sync. */
 export async function deleteRecord(record: FieldRecord): Promise<void> {
   if (record.baseVersion === 0) {
     await db.records.delete(record.id);

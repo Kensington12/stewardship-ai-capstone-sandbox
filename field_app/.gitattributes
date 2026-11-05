@@ -1,0 +1,4 @@
+# Keep Windows scripts with Windows line endings and shell scripts with Unix ones.
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh text eol=lf

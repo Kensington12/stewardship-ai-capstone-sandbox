@@ -28,35 +28,94 @@ Field device (browser / installed PWA)          Central system (Python)
 | `ui/` | The field app: React + TypeScript + Tailwind, IndexedDB (Dexie), offline service worker |
 | `server/` | Central system: sync API, SQLite storage, conflict detection, interpretation pipeline |
 | `tests/` | pytest tests for the central system (IDs in docstrings map to the requirements) |
-| `scripts/` | `start_demo.sh` starts everything |
+| `scripts/` | `start_demo.cmd` (Windows) and `start_demo.sh` (Mac / Linux) start everything |
 | `docs/` | Decisions, requirement traceability |
 | `storage/` | Central database and pipeline exports (created at runtime, not committed) |
 
-## Setup (once)
+## Getting started (teammates, first time)
 
-From the repo root, with the sandbox `.venv` active:
+You need **Python 3.11+**, **Node.js 20+** and **Git**. Check with `python3 --version`,
+`node -v` and `git --version` (on Windows use `python --version`).
+
+**1. Get the code**
 
 ```
+git clone https://github.com/Kensington12/stewardship-ai-capstone-sandbox.git
+cd stewardship-ai-capstone-sandbox
+```
+
+**2. Set up Python** (from the repo root)
+
+Mac / Linux:
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r field_app/requirements-dev.txt
-cd field_app/ui && npm install
 ```
+
+Windows (PowerShell or Command Prompt):
+
+```
+python -m venv .venv
+.venv\Scripts\python -m pip install -r field_app\requirements-dev.txt
+```
+
+If `python` isn't found, install Python from python.org and tick **"Add python.exe to
+PATH"** during setup, or use `py` instead of `python`.
+
+**3. Set up the field app**
+
+```
+cd field_app/ui
+npm install
+cd ../..
+```
+
+You only do steps 1 to 3 once. `npm install` and `pip install` need internet; after that
+everything runs offline.
 
 ## Run
+
+**Windows:** double-click `field_app\scripts\start_demo.cmd`, or run this from the repo root:
+
+```
+field_app\scripts\start_demo.cmd
+```
+
+**Mac / Linux** (or Git Bash on Windows), from the repo root:
 
 ```
 bash field_app/scripts/start_demo.sh
 ```
 
-Starts the central system on port 8000, builds the field app, and serves it with the
-offline service worker at http://localhost:4173. For UI development with hot reload,
-run `npm run dev` in `field_app/ui` instead (http://localhost:5173).
+Both start the central system, build the field app, and open it in your browser.
+
+If the browser doesn't open, go to **http://localhost:4173**. Stop with `Ctrl + C`.
+
+The central system runs on port 8000 and the field app on port 4173, with the offline
+service worker. For UI development with hot reload, run `npm run dev` in `field_app/ui`
+instead (http://localhost:5173).
+
+**Getting updates later:** `git pull`, then run `npm install` in `field_app/ui` and
+`pip install -r field_app/requirements-dev.txt` again in case packages changed.
 
 ## Test
+
+Mac / Linux (with `.venv` active):
 
 ```
 python -m pytest field_app/tests -v
 ruff check field_app && ruff format field_app
 cd field_app/ui && npm run build
+```
+
+Windows:
+
+```
+.venv\Scripts\python -m pytest field_app\tests -v
+.venv\Scripts\python -m ruff check field_app
+cd field_app\ui ; npm run build
 ```
 
 ## Demo: the offline-to-online round trip
