@@ -96,7 +96,6 @@ function formFromRecord(r: FieldRecord): FormState {
   };
 }
 
-/** Empty string -> null; otherwise a number or NaN. */
 function parseOptional(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
 }
@@ -108,7 +107,7 @@ function checkRange(errors: Errors, key: string, value: string, min: number, max
   }
 }
 
-// Same rules the central system enforces (EH-02), checked here so mistakes are caught on site.
+// Same checks the server runs, so mistakes get caught while you're still at the site.
 function validate(form: FormState): Errors {
   const errors: Errors = {};
   if (form.siteChoice === NEW_SITE && !form.siteName.trim()) errors.siteName = "Enter a site name.";
@@ -145,7 +144,7 @@ export function CapturePage() {
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
 
-  // Load the record when editing, or default to the last site used when capturing.
+  // Editing: load the record. New record: start at the last site used.
   useEffect(() => {
     let cancelled = false;
     if (id) {
@@ -168,7 +167,6 @@ export function CapturePage() {
     };
   }, [id, navigate, toast]);
 
-  // If the remembered site no longer exists, fall back to "new site".
   useEffect(() => {
     if (form.siteChoice !== NEW_SITE && sites.length && !sites.some((s) => s.id === form.siteChoice)) {
       setForm((f) => ({ ...f, siteChoice: NEW_SITE }));

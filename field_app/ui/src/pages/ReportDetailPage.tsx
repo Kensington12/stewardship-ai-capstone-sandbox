@@ -13,7 +13,7 @@ const SEVERITY: Record<Severity, { label: string; className: string; Icon: typeo
   concern: { label: "Concern", className: "border-concern-line bg-concern-soft text-concern", Icon: CircleAlert },
 };
 
-/** One interpretation report. Integrity notes are always shown, first (CONTRACT.md rule). */
+/** Integrity notes always come first. That's the one hard rule in CONTRACT.md. */
 export function ReportDetailPage() {
   const { id } = useParams();
   const [saved, setSaved] = useState<SavedReport | null>(null);

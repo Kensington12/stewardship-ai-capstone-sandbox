@@ -2,7 +2,7 @@ import { CheckCircle2, CircleAlert, Clock, GitCompare } from "lucide-react";
 
 import type { SyncStatus } from "../types";
 
-// Every status has an icon AND words, never color alone (A-03).
+// Icon plus words, so the status still reads without color.
 const STYLES: Record<SyncStatus, { label: string; className: string; Icon: typeof Clock }> = {
   pending: {
     label: "Saved on device",

@@ -1,6 +1,5 @@
 import type { InterpretationReport } from "./contract";
 
-/** A field record in the central system's shape (snake_case). */
 export interface ServerRecord {
   id: string;
   site: { id: string; name: string; latitude: number | null; longitude: number | null };
@@ -36,7 +35,7 @@ export interface SyncResponse {
   errors: number;
 }
 
-/** A saved report: our metadata wrapped around the unchanged contract report. */
+/** Our id and timestamp wrapped around the report, which stays exactly as the engine made it. */
 export interface SavedReport {
   id: string;
   created_at: string;
@@ -69,7 +68,7 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 10000): 
     window.clearTimeout(timer);
   }
   if (response.status >= 500) {
-    // Proxy and gateway failures mean the central system is down or out of reach.
+    // Usually means the central system is down or out of reach.
     throw new NetworkError("Can't reach the central system.");
   }
   if (!response.ok) {

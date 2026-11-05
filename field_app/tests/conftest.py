@@ -1,4 +1,4 @@
-"""Shared test setup: every test gets its own throwaway database."""
+"""Each test gets its own empty database."""
 
 import uuid
 from datetime import UTC, datetime
@@ -23,7 +23,7 @@ SITE_ID = str(uuid.uuid4())
 
 
 def make_record(**overrides) -> dict:
-    """A complete, valid field record, the way a device sends it."""
+    """A valid record, the way a device would send it."""
     now = datetime.now(UTC).isoformat()
     record = {
         "id": str(uuid.uuid4()),

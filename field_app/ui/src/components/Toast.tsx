@@ -10,7 +10,6 @@ interface ToastItem {
 
 const ToastContext = createContext<(message: string, tone?: Tone) => void>(() => undefined);
 
-/** Short confirmations like "Saved on this device" (UI-15, UI-16). */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 

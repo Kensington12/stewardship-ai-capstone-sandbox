@@ -1,4 +1,4 @@
-"""Central settings for the central server. Change values here, nowhere else."""
+"""Server settings, kept in one place."""
 
 import os
 from pathlib import Path

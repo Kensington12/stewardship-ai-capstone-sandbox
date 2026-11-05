@@ -1,5 +1,4 @@
-// TypeScript mirror of the data contract (see ../../../CONTRACT.md).
-// Matches InterpretationReport.to_dict() from sandbox_engine exactly.
+// Same shape as InterpretationReport.to_dict() in CONTRACT.md. Don't add fields here.
 
 export type Severity = "info" | "watch" | "concern";
 

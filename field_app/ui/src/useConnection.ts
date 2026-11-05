@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "./api";
 
-/** Tracks two things (FR-30): network access, and whether the central system answers. */
+/** Two different things: is the device online, and is the central system answering? */
 export function useConnection() {
   const [online, setOnline] = useState(navigator.onLine);
   const [serverUp, setServerUp] = useState<boolean | null>(null);

@@ -1,8 +1,7 @@
-"""Hand synced field data to the interpretation pipeline (FR-51 to FR-54, US-09).
+"""Turns synced records into a CSV and runs it through the interpretation engine.
 
-Synced records are flattened into a wide CSV, one row per field record and one
-column per sensor, which is the shape `read_dataset` expects. The report from
-`interpret` is stored exactly as `to_dict()` returns it.
+The CSV has one row per field record and one column per sensor, which is what
+`read_dataset` expects. Reports are saved exactly as the engine returns them.
 """
 
 import csv
@@ -34,7 +33,7 @@ METADATA_COLUMNS = [
 
 
 def export_rows(site_id: str | None = None) -> tuple[list[str], list[dict]]:
-    """Synced, non-deleted records as wide rows. Optionally limited to one site."""
+    """All synced records (or one site's), skipping anything that was deleted."""
     sql = (
         "SELECT r.*, s.name AS site_name, s.latitude, s.longitude FROM field_records r "
         "JOIN sites s ON s.id = r.site_id WHERE r.deleted = 0"
@@ -103,20 +102,20 @@ def save_report(report: dict, source_kind: str, source_ref: str) -> dict:
 
 
 def interpret_file(csv_path: Path, source_kind: str, source_ref: str) -> dict:
-    """Run read_dataset -> interpret and store the report unchanged."""
+    """Runs the engine on a CSV and saves the report as-is."""
     report = interpret(read_dataset(str(csv_path))).to_dict()
     return save_report(report, source_kind, source_ref)
 
 
 def interpret_synced_records(site_id: str | None = None) -> dict:
-    """Export synced records to CSV, then interpret it."""
+
     text = export_csv(site_id)
     if text.count("\n") < 2:
         raise ValueError("No synced field records to interpret yet.")
     config.EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = now_iso().replace(":", "").replace("-", "")
     path = config.EXPORTS_DIR / f"field_records_{site_id or 'all'}_{stamp}.csv"
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding="utf-8", newline="")
     return interpret_file(path, "field_records", site_id or "all")
 
 

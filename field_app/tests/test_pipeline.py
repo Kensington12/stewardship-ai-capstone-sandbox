@@ -1,4 +1,4 @@
-"""Interpretation pipeline tests: synced data in, contract report out."""
+"""Synced records in, contract-shaped report out."""
 
 import csv
 import io
@@ -16,7 +16,7 @@ CONTRACT_KEYS = {
 
 
 def test_export_is_one_row_per_record_with_metadata(client):
-    """[T-14, FR-51, FR-52] Wide CSV keeps site, time and conditions with the readings."""
+    """Each row keeps its site, time and conditions next to the readings. (T-14, FR-51, FR-52)"""
     client.post("/sync", json={"records": [make_record(), make_record()]})
     rows = list(csv.DictReader(io.StringIO(client.get("/export/records.csv").text)))
     assert len(rows) == 2
@@ -26,7 +26,7 @@ def test_export_is_one_row_per_record_with_metadata(client):
 
 
 def test_synced_records_produce_a_contract_report(client):
-    """[US-09, T-14] Report keys match CONTRACT.md exactly, integrity notes included."""
+    """The report has exactly the CONTRACT.md fields, integrity notes included. (US-09, T-14)"""
     client.post("/sync", json={"records": [make_record(), make_record()]})
     saved = client.post("/reports", json={}).json()
     assert set(saved["report"].keys()) == CONTRACT_KEYS
@@ -35,7 +35,7 @@ def test_synced_records_produce_a_contract_report(client):
 
 
 def test_interpreting_with_no_synced_data_is_a_clear_error(client):
-    """[UI-10, A-04]"""
+    """Asking for a report with nothing synced gives a clear message. (UI-10, A-04)"""
     response = client.post("/reports", json={})
     assert response.status_code == 409
     assert "No synced field records" in response.json()["detail"]
@@ -47,5 +47,5 @@ def test_sample_dataset_still_interprets(client):
 
 
 def test_dataset_outside_data_folder_is_refused(client):
-    """[SR-07 style path safety]"""
+    """File names can't reach outside the data folder."""
     assert client.post("/reports", json={"dataset": "../pytest.ini"}).status_code == 404

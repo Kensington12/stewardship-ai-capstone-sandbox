@@ -1,4 +1,4 @@
-// Shared class names so every button and field looks the same.
+// Shared styles so buttons and inputs look the same everywhere.
 
 export const btnPrimary =
   "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-white no-underline transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";

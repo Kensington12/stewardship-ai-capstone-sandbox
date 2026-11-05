@@ -1,4 +1,4 @@
-"""SQLite storage for the central system: schema setup and connections."""
+"""The central SQLite database."""
 
 import sqlite3
 from collections.abc import Iterator
@@ -80,7 +80,7 @@ CREATE INDEX IF NOT EXISTS idx_conflicts_record ON conflicts(record_id);
 
 
 def init_db(db_path: Path | None = None) -> None:
-    """Create the database file and tables if they don't exist yet."""
+    """Creates the database and tables on first run. Safe to call every time."""
     db_path = db_path or config.DB_PATH
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
@@ -89,7 +89,7 @@ def init_db(db_path: Path | None = None) -> None:
 
 @contextmanager
 def get_connection(db_path: Path | None = None) -> Iterator[sqlite3.Connection]:
-    """Open a connection, commit on success, roll back on failure."""
+    """If anything inside the `with` block fails, none of its changes are saved."""
     conn = sqlite3.connect(db_path or config.DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
