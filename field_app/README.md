@@ -1,41 +1,35 @@
 # Offline-First Field-Capture App
 
-CIS 420 capstone for Stewardship Compute (sandbox Track 3).
+CIS 420 capstone for Stewardship Compute.
 Team: Destiny Childress, Noah Turner, KC Cabiness, Kountou Coulibaly.
 
-Field researchers capture sensor readings, notes, site, time and conditions with no
-signal. Records are saved on the device first and sync to the central system when the
-connection returns. Synced data feeds the interpretation pipeline (`CONTRACT.md`), and
-the app always shows the report's `integrity_notes`.
+Researchers record sensor readings, notes, site, time and conditions with no signal.
+Records save on the device and sync to the central system when the connection comes back.
+Synced data then goes through the interpretation pipeline in `CONTRACT.md`.
 
-## How it fits together
+## How it works
 
 ```
-Field device (browser / installed PWA)          Central system (Python)
-┌───────────────────────────────┐   POST /sync  ┌──────────────────────────────┐
-│ React UI: Capture, Records,   │ ────────────► │ FastAPI: validate, de-dupe,  │
-│ Sync, Reports                 │ ◄──────────── │ detect conflicts             │
-│ IndexedDB (records, sites)    │  per-record   │ SQLite: central.db           │
-│ Service worker (works offline)│   results     │ Pipeline: CSV → read_dataset │
-└───────────────────────────────┘               │           → interpret        │
-                                                └──────────────────────────────┘
+Field app (on the device)               Central system (Python)
+- Capture, Records, Sync, Reports  ───►  - Checks each record
+- Saves records on the device      ◄───  - Skips duplicates, flags conflicts
+- Works offline                          - Runs the interpretation pipeline
 ```
 
-## Layout
+## Folders
 
-| Path | Role |
+| Folder | What's in it |
 |---|---|
-| `ui/` | The field app: React + TypeScript + Tailwind, IndexedDB (Dexie), offline service worker |
-| `server/` | Central system: sync API, SQLite storage, conflict detection, interpretation pipeline |
-| `tests/` | pytest tests for the central system (IDs in docstrings map to the requirements) |
-| `scripts/` | `start_demo.cmd` (Windows) and `start_demo.sh` (Mac / Linux) start everything |
-| `docs/` | Decisions, requirement traceability |
-| `storage/` | Central database and pipeline exports (created at runtime, not committed) |
+| `ui/` | The field app (React) |
+| `server/` | The central system (Python) |
+| `tests/` | Tests for the central system |
+| `scripts/` | Start and reset scripts |
+| `docs/` | Design decisions and requirement tracking |
+| `storage/` | Databases and the sync key, created when the app runs (not committed) |
 
-## Getting started (teammates, first time)
+## First-time setup
 
-You need **Python 3.11+**, **Node.js 20+** and **Git**. Check with `python3 --version`,
-`node -v` and `git --version` (on Windows use `python --version`).
+You need **Python 3.11+**, **Node.js 20+** and **Git**.
 
 **1. Get the code**
 
@@ -44,9 +38,9 @@ git clone https://github.com/Kensington12/stewardship-ai-capstone-sandbox.git
 cd stewardship-ai-capstone-sandbox
 ```
 
-**2. Set up Python** (from the repo root)
+**2. Set up Python**
 
-Mac / Linux:
+Mac:
 
 ```
 python3 -m venv .venv
@@ -54,17 +48,16 @@ source .venv/bin/activate
 pip install -r field_app/requirements-dev.txt
 ```
 
-Windows (PowerShell or Command Prompt):
+Windows:
 
 ```
 python -m venv .venv
 .venv\Scripts\python -m pip install -r field_app\requirements-dev.txt
 ```
 
-If `python` isn't found, install Python from python.org and tick **"Add python.exe to
-PATH"** during setup, or use `py` instead of `python`.
+If Windows says `python` isn't found, reinstall Python and tick **"Add python.exe to PATH"**.
 
-**3. Set up the field app**
+**3. Set up the app**
 
 ```
 cd field_app/ui
@@ -72,60 +65,50 @@ npm install
 cd ../..
 ```
 
-You only do steps 1 to 3 once. `npm install` and `pip install` need internet; after that
-everything runs offline.
+## Run it
 
-## Run
+From the `stewardship-ai-capstone-sandbox` folder:
 
-**Windows:** double-click `field_app\scripts\start_demo.cmd`, or run this from the repo root:
+| Computer | Command |
+|---|---|
+| Mac | `bash field_app/scripts/start_demo.sh` |
+| Windows | `.\field_app\scripts\start_demo.cmd` (or double-click it) |
+
+The app opens at **http://localhost:4173**. Press `Ctrl + C` to stop.
+
+**Connect your device once:** the terminal prints a sync key like `K7PM-Q2XD-9HWT-R4CN`.
+Enter it on the app's **Sync** page. Without it, records still save but won't sync.
+
+**Get updates:** `git pull`, then `npm install` in `field_app/ui`.
+
+## Reset for a demo
+
+Clears the central database and adds three example records:
 
 ```
-field_app\scripts\start_demo.cmd
+.venv/bin/python field_app/scripts/reset_demo.py --seed        # Mac
+.venv\Scripts\python field_app\scripts\reset_demo.py --seed   # Windows
 ```
 
-**Mac / Linux** (or Git Bash on Windows), from the repo root:
-
-```
-bash field_app/scripts/start_demo.sh
-```
-
-Both start the central system, build the field app, and open it in your browser.
-
-If the browser doesn't open, go to **http://localhost:4173**. Stop with `Ctrl + C`.
-
-The central system runs on port 8000 and the field app on port 4173, with the offline
-service worker. For UI development with hot reload, run `npm run dev` in `field_app/ui`
-instead (http://localhost:5173).
-
-**Getting updates later:** `git pull`, then run `npm install` in `field_app/ui` and
-`pip install -r field_app/requirements-dev.txt` again in case packages changed.
+To clear a device, use **Clear data on this device** on the Sync page.
 
 ## Test
 
-Mac / Linux (with `.venv` active):
-
 ```
-python -m pytest field_app/tests -v
-ruff check field_app && ruff format field_app
-cd field_app/ui && npm run build
+.venv/bin/python -m pytest field_app/tests        # Mac
+.venv\Scripts\python -m pytest field_app\tests   # Windows
 ```
 
-Windows:
+## Demo steps
 
-```
-.venv\Scripts\python -m pytest field_app\tests -v
-.venv\Scripts\python -m ruff check field_app
-cd field_app\ui ; npm run build
-```
+1. Reset, start the app, and enter the sync key.
+2. Stop the central system (`Ctrl + C`) to simulate no signal.
+3. Capture a record and save it. It shows **Saved on device**.
+4. Close the tab and reopen it. The record is still there.
+5. Start the central system again. The record syncs.
+6. On the **Reports** page, the record appears once under **On the central system**.
+7. Edit the same record in two places to show a conflict. Both versions appear side by
+   side, and nothing is overwritten.
 
-## Demo: the offline-to-online round trip
-
-1. Start the app. Stop the central system (`Ctrl + C` in its terminal) to simulate no signal.
-2. Capture a record: site, time, conditions, readings, notes. Save. The record shows "Saved on device".
-3. Close the browser tab and reopen it. The record is still there.
-4. Start the central system again. The record syncs on its own (or press **Sync now**).
-5. Check `http://127.0.0.1:8000/records`: one copy, with all the original data.
-6. Conflict: edit the same record somewhere else, then edit it on the device. The Sync page shows both versions side by side, and nothing is overwritten.
-
-See `docs/DECISIONS.md` for why it is built this way and `docs/TRACEABILITY.md` for
-where each requirement is handled.
+More detail: `docs/DECISIONS.md` (why it's built this way) and `docs/TRACEABILITY.md`
+(where each requirement is handled).

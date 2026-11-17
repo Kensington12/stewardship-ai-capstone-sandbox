@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Droplet, FileText, List, PenLine, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Droplet, FileText, KeyRound, List, PenLine, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { useCallback, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 
@@ -26,6 +26,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     [],
     0,
   );
+
+  const hasKey = useLiveQuery(async () => !!(await db.meta.get("syncKey"))?.value, [], true);
 
   const onSync = useCallback(
     (outcome: SyncOutcome) => {
@@ -61,6 +63,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               {online ? <Wifi className="size-4" aria-hidden="true" /> : <WifiOff className="size-4" aria-hidden="true" />}
               {online ? (serverUp ? "Online" : "Online · central system unreachable") : "Offline · saving on device"}
             </span>
+            {!hasKey && (
+              <Link
+                to="/sync"
+                className="inline-flex items-center gap-1.5 rounded-full border border-watch-line bg-watch-soft px-3 py-1.5 text-watch no-underline"
+              >
+                <KeyRound className="size-4" aria-hidden="true" />
+                Add sync key
+              </Link>
+            )}
             {waiting > 0 && (
               <Link
                 to="/sync"

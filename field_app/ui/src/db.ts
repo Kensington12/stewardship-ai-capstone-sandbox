@@ -71,6 +71,12 @@ export async function saveRecord(record: FieldRecord): Promise<void> {
   notifyChanged();
 }
 
+/** Wipes everything this app stored on the device: records, sites, the sync key and settings. */
+export async function clearDevice(): Promise<void> {
+  await db.delete();
+  await db.open();
+}
+
 /** Records that never synced are just removed. Synced ones send the delete on the next sync. */
 export async function deleteRecord(record: FieldRecord): Promise<void> {
   if (record.baseVersion === 0) {

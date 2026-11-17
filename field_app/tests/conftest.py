@@ -8,11 +8,31 @@ from fastapi.testclient import TestClient
 
 from field_app.server import config
 
+TEST_KEY = "TEST-KEY0-ABCD-EFGH"
+
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def isolated(tmp_path, monkeypatch):
+    """A fresh database, export folder and sync key for one test."""
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "test.db")
     monkeypatch.setattr(config, "EXPORTS_DIR", tmp_path / "exports")
+    monkeypatch.setattr(config, "SYNC_KEY_FILE", tmp_path / "sync_key.txt")
+    monkeypatch.setenv("FIELD_SYNC_KEY", TEST_KEY)
+    return tmp_path
+
+
+@pytest.fixture
+def client(isolated):
+    """A client that sends the right sync key, like a set-up device."""
+    from field_app.server.app import app
+
+    with TestClient(app, headers={"X-Sync-Key": TEST_KEY}) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def anonymous(isolated):
+    """A client with no sync key, like someone who isn't on the team."""
     from field_app.server.app import app
 
     with TestClient(app) as test_client:

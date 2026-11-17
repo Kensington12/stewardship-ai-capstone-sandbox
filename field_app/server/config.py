@@ -13,3 +13,6 @@ DB_PATH = Path(os.environ.get("FIELD_DB_PATH", STORAGE_DIR / "central.db"))
 
 SERVER_PORT = 8000
 MAX_RECORDS_PER_SYNC = 500
+SYNC_KEY_FILE = Path(
+    os.environ.get("FIELD_SYNC_KEY_FILE", STORAGE_DIR / "sync_key.txt")
+)

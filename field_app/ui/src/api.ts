@@ -1,4 +1,5 @@
 import type { InterpretationReport } from "./contract";
+import { getMeta } from "./db";
 
 export interface ServerRecord {
   id: string;
@@ -52,15 +53,30 @@ export interface ReportListItem {
 
 export class NetworkError extends Error {}
 
-async function request<T>(path: string, init?: RequestInit, timeoutMs = 10000): Promise<T> {
+/** The central system turned the request away because the sync key is missing or wrong. */
+export class SyncKeyError extends Error {}
+
+export interface CentralRecord {
+  id: string;
+  site_name: string;
+  captured_at: string;
+  version: number;
+  deleted: number;
+  synced_at: string;
+  reading_count: number;
+  note_count: number;
+}
+
+async function send(path: string, init?: RequestInit, timeoutMs = 10000, keyOverride?: string): Promise<Response> {
+  const key = keyOverride ?? (await getMeta("syncKey")) ?? "";
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
       ...init,
+      headers: { "Content-Type": "application/json", "X-Sync-Key": key },
+      signal: controller.signal,
     });
   } catch {
     throw new NetworkError("Can't reach the central system.");
@@ -71,15 +87,23 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 10000): 
     // Usually means the central system is down or out of reach.
     throw new NetworkError("Can't reach the central system.");
   }
+  if (response.status === 401) {
+    throw new SyncKeyError("The sync key is missing or wrong. Enter it on the Sync page.");
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(typeof body.detail === "string" ? body.detail : `Request failed (${response.status})`);
   }
-  return response.json() as Promise<T>;
+  return response;
+}
+
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 10000): Promise<T> {
+  return (await send(path, init, timeoutMs)).json() as Promise<T>;
 }
 
 export const api = {
   health: () => request<{ status: string }>("/health", undefined, 4000),
+  checkKey: (key: string) => send("/auth/check", undefined, 6000, key).then(() => true),
   sync: (records: ServerRecord[]) =>
     request<SyncResponse>("/sync", { method: "POST", body: JSON.stringify({ records }) }, 30000),
   resolveConflict: (id: string, resolution: "kept_server" | "kept_device") =>
@@ -91,5 +115,8 @@ export const api = {
   createReport: (body: { dataset?: string; site_id?: string }) =>
     request<SavedReport>("/reports", { method: "POST", body: JSON.stringify(body) }, 30000),
   reports: () => request<ReportListItem[]>("/reports"),
+  centralRecords: () => request<CentralRecord[]>("/records"),
+  exportCsv: (siteId?: string) =>
+    send(`/export/records.csv${siteId ? `?site_id=${encodeURIComponent(siteId)}` : ""}`).then((r) => r.text()),
   report: (id: string) => request<SavedReport>(`/reports/${id}`),
 };
