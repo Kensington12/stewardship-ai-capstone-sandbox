@@ -5,11 +5,12 @@ are what the interpretation pipeline reads.
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from . import pipeline
+from .auth import load_sync_key, require_sync_key
 from .config import DATA_DIR
 from .db import get_connection, init_db
 from .models import ConflictResolution, SyncRequest, SyncResponse
@@ -19,10 +20,14 @@ from .sync import apply_record, load_record, now_iso
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    print(f"\n  Sync key for field devices: {load_sync_key()}\n", flush=True)
     yield
 
 
 app = FastAPI(title="Field-Capture Central System", lifespan=lifespan)
+
+# Everything except /health needs the sync key.
+api = APIRouter(dependencies=[Depends(require_sync_key)])
 
 
 @app.get("/health")
@@ -30,10 +35,15 @@ def health():
     return {"status": "ok"}
 
 
+@api.get("/auth/check")
+def auth_check():
+    return {"ok": True}
+
+
 # Sync
 
 
-@app.post("/sync", response_model=SyncResponse)
+@api.post("/sync", response_model=SyncResponse)
 def sync(request: SyncRequest):
     """Each record in the batch succeeds or fails on its own, so one bad record can't block the rest."""
     results = []
@@ -48,7 +58,7 @@ def sync(request: SyncRequest):
     )
 
 
-@app.get("/records")
+@api.get("/records")
 def list_records():
     with get_connection() as conn:
         rows = conn.execute(
@@ -60,7 +70,7 @@ def list_records():
     return [dict(r) for r in rows]
 
 
-@app.get("/records/{record_id}")
+@api.get("/records/{record_id}")
 def get_record(record_id: str):
     with get_connection() as conn:
         record = load_record(conn, record_id)
@@ -69,7 +79,7 @@ def get_record(record_id: str):
     return record
 
 
-@app.post("/records/{record_id}/conflicts/resolve")
+@api.post("/records/{record_id}/conflicts/resolve")
 def resolve_conflict(record_id: str, body: ConflictResolution):
     """Logs which version the researcher kept."""
     with get_connection() as conn:
@@ -81,7 +91,7 @@ def resolve_conflict(record_id: str, body: ConflictResolution):
     return {"resolved": updated}
 
 
-@app.get("/conflicts")
+@api.get("/conflicts")
 def list_conflicts():
     with get_connection() as conn:
         rows = conn.execute(
@@ -106,7 +116,7 @@ def resolve_dataset(name: str) -> Path:
     return path
 
 
-@app.get("/export/records.csv", response_class=PlainTextResponse)
+@api.get("/export/records.csv", response_class=PlainTextResponse)
 def export_records(site_id: str | None = None):
     return PlainTextResponse(
         pipeline.export_csv(site_id),
@@ -115,12 +125,12 @@ def export_records(site_id: str | None = None):
     )
 
 
-@app.get("/datasets")
+@api.get("/datasets")
 def list_datasets():
     return sorted(p.name for p in DATA_DIR.glob("*.csv"))
 
 
-@app.post("/reports", status_code=201)
+@api.post("/reports", status_code=201)
 def create_report(request: InterpretRequest):
     """Interprets the synced field records, or one of the sample datasets if one is named."""
     if request.dataset:
@@ -133,14 +143,17 @@ def create_report(request: InterpretRequest):
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
-@app.get("/reports")
+@api.get("/reports")
 def get_reports():
     return pipeline.list_reports()
 
 
-@app.get("/reports/{report_id}")
+@api.get("/reports/{report_id}")
 def get_one_report(report_id: str):
     record = pipeline.get_report(report_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Report not found.")
     return record
+
+
+app.include_router(api)

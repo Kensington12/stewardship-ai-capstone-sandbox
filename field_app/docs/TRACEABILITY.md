@@ -1,15 +1,14 @@
-# Requirement traceability (T-23)
+# Requirement tracking (T-23)
 
-Maps every requirement in the team's requirements document to where it is handled and
-how it is tested. Update the **Status** column as work lands.
+Where each requirement is handled, how it's tested, and whether it's done.
 
-**Status values:** Done, Partial (started but not finished), Planned (not started yet).
+**Status:** Done, Partial, or Planned.
 
-**Test types:**
+**Tests:**
 
-- `pytest`: automated server test in `field_app/tests` (the test docstrings list the IDs)
-- `E2E`: browser walkthrough of the completion workflow
-- `Manual`: checked by hand during demo rehearsal
+- `pytest`: automated test in `field_app/tests`
+- `E2E`: clicked through in the browser
+- `Manual`: checked by hand
 
 ## User stories
 
@@ -79,7 +78,7 @@ how it is tested. Update the **Status** column as work lands.
 | FR-51 Structured output | H | `/export/records.csv` | pytest | Done |
 | FR-52 Metadata preserved | H | Metadata columns in export | pytest | Done |
 | FR-53 Synced vs incomplete | H | Only synced, non-deleted records exported | pytest | Done |
-| FR-54 Export mechanism | M | CSV export, `POST /reports` | pytest | Done |
+| FR-54 Export mechanism | M | CSV download on Reports page, `POST /reports` | pytest, E2E | Done |
 | FR-55 Direct integration | L | Calls `sandbox_engine` directly | pytest | Done |
 
 ## Security
@@ -89,15 +88,15 @@ how it is tested. Update the **Status** column as work lands.
 | SR-01 Protect local data | Browser storage is private to the app's origin | Partial |
 | SR-02 No third-party services | Nothing leaves the device except to the central system | Done |
 | SR-03 Secure transport | Needs HTTPS outside the demo laptop | Planned |
-| SR-04 Authentication | Not built yet | Planned |
-| SR-05 Block unauthorized access | Depends on SR-04 | Planned |
+| SR-04 Authentication | Team sync key (`server/auth.py`) | Done |
+| SR-05 Block unauthorized access | Refused without the key (`test_security.py`) | Done |
 | SR-06 No stored credentials | No credentials exist yet | Done |
 | SR-07 No data in URLs | Records sent in request bodies, only IDs in paths | Done |
-| SR-08 No data in logs | Server logs request lines only | Partial (T-17 test planned) |
+| SR-08 No data in logs | Tested: logs show no field data | Done |
 | SR-09 Validate incoming data | `server/models.py` | Done |
 | SR-10 Integrity in transit | Depends on SR-03 | Planned |
-| SR-11 Clear local data | Not built yet | Planned |
-| SR-12 Document protection | `docs/DECISIONS.md` | Partial |
+| SR-11 Clear local data | "Clear data on this device" on the Sync page | Done |
+| SR-12 Document protection | `docs/DECISIONS.md` section 6 | Done |
 
 ## UI and accessibility
 
@@ -134,8 +133,8 @@ how it is tested. Update the **Status** column as work lands.
 | BE-05 Track sync status | `version`, `synced_at` | Done |
 | BE-06 Support conflict process | `conflicts` table, resolve endpoint | Done |
 | BE-07 Clear responses | Per-record `synced` / `conflict` / `error` | Done |
-| BE-08 Don't log data | Request lines only | Partial |
-| BE-09 Authentication | Not built yet | Planned |
+| BE-08 Don't log data | Request lines only, tested | Done |
+| BE-09 Authentication | Sync key | Done |
 | BE-10 Safe error details | Validation messages name the field, no internals | Done |
 | EH-01 Save offline | Local-first saves | Done |
 | EH-02 Block invalid records | Form validation + server validation | Done |
@@ -156,22 +155,22 @@ how it is tested. Update the **Status** column as work lands.
 |---|---|---|
 | T-01 to T-05 Offline capture, storage, reopen | E2E | Done |
 | T-06 Sync after reconnect | E2E | Done |
-| T-07 No duplicates | `test_resending_the_same_record_does_not_duplicate`, E2E | Done |
-| T-08 Interrupted sync | Planned: kill the server mid-sync | Planned |
+| T-07 No duplicates | `test_sync.py`, E2E | Done |
+| T-08 Interrupted sync | `test_reliability.py` | Done |
 | T-09 No loss on failure | E2E (sync while server down) | Done |
-| T-10 Multiple records | `test_multiple_pending_records_sync_together` | Done |
-| T-11, T-12 Conflicts | `test_conflicting_edit_...`, `test_keeping_the_device_version_...`, E2E | Done |
-| T-13 Metadata kept | `test_new_record_is_stored_with_all_metadata` | Done |
+| T-10 Multiple records | `test_sync.py` | Done |
+| T-11, T-12 Conflicts | `test_sync.py`, E2E | Done |
+| T-13 Metadata kept | `test_sync.py` | Done |
 | T-14 Pipeline format | `test_pipeline.py` | Done |
-| T-15 Invalid input | `test_invalid_record_...` | Done |
-| T-16 Unexpected errors | `test_garbage_input_does_not_crash_the_server` | Done |
-| T-17 Logs | Planned | Planned |
-| T-18 Security testing | Planned | Planned |
-| T-19, T-20 Browsers / screen sizes | Desktop and 390 px phone checked; more devices planned | Partial |
+| T-15 Invalid input | `test_sync.py` | Done |
+| T-16 Unexpected errors | `test_sync.py` | Done |
+| T-17 Logs | `test_security.py` | Done |
+| T-18 Security testing | `test_security.py` and bad-input tests | Partial |
+| T-19, T-20 Browsers / screen sizes | Desktop and phone size checked; more devices planned | Partial |
 | T-21 Intermittent connectivity | Planned | Planned |
 | T-22 Test documentation | This file + test docstrings | Partial |
 | T-23 Traceability | This file | Done |
-| T-24 Round-trip demo | README demo steps | Partial (rehearsal) |
+| T-24 Round-trip demo | README demo steps, `reset_demo.py --seed` | Partial |
 
 ## Documentation and non-functional
 
@@ -180,10 +179,10 @@ how it is tested. Update the **Status** column as work lands.
 | D-01 Architecture | `README.md`, `DECISIONS.md` | Done |
 | D-02 Capture workflow | `README.md` demo steps | Partial |
 | D-03 Local storage | `DECISIONS.md` §2 | Done |
-| D-04 Data model | `ui/src/types.ts`, `server/models.py` | Partial (needs a diagram) |
+| D-04 Data model | `ui/src/types.ts`, `server/models.py` | Partial |
 | D-05 Sync process | `DECISIONS.md` §3 | Done |
 | D-06 Conflict strategy | `DECISIONS.md` §4 | Done |
-| D-07 Security decisions | `DECISIONS.md` known limitations | Partial |
+| D-07 Security decisions | `DECISIONS.md` section 6 | Done |
 | D-08 Testing | This file | Partial |
 | D-09 Pipeline | `DECISIONS.md` §5 | Done |
 | D-10 Limitations | `DECISIONS.md` | Done |
@@ -199,6 +198,6 @@ how it is tested. Update the **Status** column as work lands.
 | NFR-10 Maintainable | Ruff, typed code, docs | Done |
 | NFR-11 Version control | Git, needs regular commits | Partial |
 | NFR-13 Battery | No polling faster than 15 s | Done |
-| NFR-14 1,000 records | IndexedDB indexes; load test planned | Partial |
+| NFR-14 1,000 records | `test_reliability.py` | Partial |
 | NFR-15 Consistent across devices | One codebase | Partial |
 | NFR-17 New data types | "Other" sensor, flexible export columns | Done |

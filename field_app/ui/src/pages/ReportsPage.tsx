@@ -1,9 +1,9 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { api, NetworkError, type ReportListItem } from "../api";
+import { api, NetworkError, SyncKeyError, type CentralRecord, type ReportListItem } from "../api";
 import { btnPrimary, btnSecondary, card, input, label } from "../components/ui";
 import { useToast } from "../components/Toast";
 import { db } from "../db";
@@ -14,18 +14,26 @@ export function ReportsPage() {
   const sites = useLiveQuery(() => db.sites.orderBy("name").toArray(), [], []);
   const [reports, setReports] = useState<ReportListItem[] | null>(null);
   const [datasets, setDatasets] = useState<string[]>([]);
-  const [unreachable, setUnreachable] = useState(false);
+  const [central, setCentral] = useState<CentralRecord[] | null>(null);
+  const [unreachable, setUnreachable] = useState<string | null>(null);
   const [siteId, setSiteId] = useState("");
   const [running, setRunning] = useState<string | null>(null);
 
   function load() {
-    Promise.all([api.reports(), api.datasets()])
-      .then(([r, d]) => {
+    Promise.all([api.reports(), api.datasets(), api.centralRecords()])
+      .then(([r, d, c]) => {
         setReports(r);
         setDatasets(d);
-        setUnreachable(false);
+        setCentral(c);
+        setUnreachable(null);
       })
-      .catch(() => setUnreachable(true));
+      .catch((error) =>
+        setUnreachable(
+          error instanceof SyncKeyError
+            ? "This device doesn't have the sync key yet. Add it on the Sync page to see reports."
+            : "Can't reach the central system right now. Your field records are safe on this device, and capturing and saving still work offline.",
+        ),
+      );
   }
 
   useEffect(load, []);
@@ -38,15 +46,29 @@ export function ReportsPage() {
       load();
     } catch (error) {
       toast(
-        error instanceof NetworkError
-          ? "Reports need the central system. Connect and try again."
-          : (error as Error).message,
+        error instanceof NetworkError ? "Reports need the central system. Connect and try again." : (error as Error).message,
         "error",
       );
     } finally {
       setRunning(null);
     }
   }
+
+  async function downloadCsv() {
+    try {
+      const text = await api.exportCsv(siteId || undefined);
+      const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "field_records.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  }
+
+  const liveCentral = (central ?? []).filter((r) => !r.deleted);
 
   return (
     <>
@@ -59,8 +81,7 @@ export function ReportsPage() {
 
       {unreachable && (
         <div role="alert" className="rounded-xl border border-watch-line bg-watch-soft px-4 py-3 text-sm text-watch">
-          Can't reach the central system right now. Your field records are safe on this device. Capturing and saving
-          still work offline.
+          {unreachable}
         </div>
       )}
 
@@ -90,6 +111,64 @@ export function ReportsPage() {
           {running === "records" ? "Interpreting…" : "Create report"}
         </button>
       </section>
+
+      {central && (
+        <section aria-labelledby="central-heading" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-col gap-1">
+              <h2 id="central-heading" className="text-lg font-bold">
+                On the central system
+              </h2>
+              <p className="text-sm text-slate-600">
+                {liveCentral.length === 1 ? "1 synced record" : `${liveCentral.length} synced records`}. Each record
+                appears once, however many times it was sent.
+              </p>
+            </div>
+            <button type="button" onClick={downloadCsv} disabled={liveCentral.length === 0} className={btnSecondary}>
+              <Download className="size-4" aria-hidden="true" />
+              Download CSV
+            </button>
+          </div>
+          {liveCentral.length > 0 && (
+            <div className={`${card} overflow-x-auto`}>
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead>
+                  <tr className="bg-slate-50 text-left text-xs tracking-wide text-slate-600 uppercase">
+                    <th scope="col" className="px-4 py-2 font-semibold">
+                      Site
+                    </th>
+                    <th scope="col" className="px-4 py-2 font-semibold">
+                      Captured
+                    </th>
+                    <th scope="col" className="px-4 py-2 text-right font-semibold">
+                      Readings
+                    </th>
+                    <th scope="col" className="px-4 py-2 text-right font-semibold">
+                      Notes
+                    </th>
+                    <th scope="col" className="px-4 py-2 text-right font-semibold">
+                      Version
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liveCentral.map((r) => (
+                    <tr key={r.id} className="border-t border-slate-100">
+                      <th scope="row" className="px-4 py-2 text-left font-semibold">
+                        {r.site_name}
+                      </th>
+                      <td className="px-4 py-2">{formatDateTime(r.captured_at)}</td>
+                      <td className="px-4 py-2 text-right">{r.reading_count}</td>
+                      <td className="px-4 py-2 text-right">{r.note_count}</td>
+                      <td className="px-4 py-2 text-right">{r.version}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="list-heading" className="flex flex-col gap-3">
         <h2 id="list-heading" className="text-lg font-bold">

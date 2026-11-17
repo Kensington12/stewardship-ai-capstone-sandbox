@@ -1,7 +1,7 @@
 // Sends waiting records to the central system and updates each one with the result.
 // Nothing is removed from the device until the central system confirms it.
 
-import { api, NetworkError, type ServerRecord } from "./api";
+import { api, NetworkError, SyncKeyError, type ServerRecord } from "./api";
 import { db, notifyChanged, setMeta } from "./db";
 import type { FieldRecord, RecordContent } from "./types";
 
@@ -18,6 +18,7 @@ export type SyncOutcome =
   | { kind: "nothing" }
   | { kind: "busy" }
   | { kind: "unreachable"; message: string }
+  | { kind: "needsKey"; message: string }
   | { kind: "done"; synced: number; conflicts: number; errors: number };
 
 export function toPayload(r: FieldRecord): ServerRecord & { base_version: number } {
@@ -77,7 +78,7 @@ export async function syncNow(): Promise<SyncOutcome> {
           ? "Can't reach the central system. Your records are safe on this device."
           : (error as Error).message;
       await saveLastSync({ ok: false, synced: 0, conflicts: 0, errors: 0, message });
-      return { kind: "unreachable", message };
+      return error instanceof SyncKeyError ? { kind: "needsKey", message } : { kind: "unreachable", message };
     }
 
     const sentById = new Map(queue.map((r) => [r.id, r]));

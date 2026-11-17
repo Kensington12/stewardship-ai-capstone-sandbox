@@ -55,8 +55,8 @@ export function ReportDetailPage() {
           </h2>
           {report.integrity_notes.length ? (
             <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-integrity">
-              {report.integrity_notes.map((note) => (
-                <li key={note}>{note}</li>
+              {report.integrity_notes.map((note, i) => (
+                <li key={i}>{note}</li>
               ))}
             </ul>
           ) : (

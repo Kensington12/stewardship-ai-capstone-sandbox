@@ -3,6 +3,7 @@ import { CheckCircle2, CircleAlert, Clock, GitCompare, RefreshCw } from "lucide-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { ClearDeviceCard, SyncKeyCard } from "../components/DeviceSettings";
 import { btnPrimary, btnSecondary, card } from "../components/ui";
 import { useToast } from "../components/Toast";
 import { db } from "../db";
@@ -126,7 +127,7 @@ export function SyncPage() {
     const outcome = await syncNow();
     setSyncing(false);
     if (outcome.kind === "nothing") toast("Everything is already synced.");
-    if (outcome.kind === "unreachable") toast(outcome.message, "error");
+    if (outcome.kind === "unreachable" || outcome.kind === "needsKey") toast(outcome.message, "error");
     if (outcome.kind === "done" && outcome.synced && !outcome.conflicts && !outcome.errors)
       toast(`${plural(outcome.synced, "record")} synced to the central system.`);
   }
@@ -153,6 +154,8 @@ export function SyncPage() {
         </button>
       </div>
 
+      <SyncKeyCard />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map(({ label, count, Icon, tone }) => (
           <div key={label} className={`${card} flex flex-col gap-2 p-4`}>
@@ -170,7 +173,7 @@ export function SyncPage() {
           ? "No sync attempted yet on this device."
           : lastSync.ok
             ? `Last sync at ${formatTime(lastSync.at)}: ${plural(lastSync.synced, "record")} synced, ${lastSync.conflicts} need review, ${lastSync.errors} failed.`
-            : `Last attempt at ${formatTime(lastSync.at)} didn't reach the central system. ${lastSync.message ?? ""}`}
+            : `Last attempt at ${formatTime(lastSync.at)} didn't go through. ${lastSync.message ?? ""}`}
       </p>
 
       {conflicts.length > 0 && (
@@ -223,6 +226,8 @@ export function SyncPage() {
           </ul>
         </section>
       )}
+
+      <ClearDeviceCard />
     </>
   );
 }
